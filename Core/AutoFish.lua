@@ -1,64 +1,137 @@
-local KavoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = KavoLib.CreateLib("DC PROJECT | Fisch", "DarkTheme")
 
--- TAB UTAMA
-local Main = Window:NewTab("Auto Farm")
-local MainSection = Main:NewSection("Automation")
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({
+    Name = "🔥 DC PROJECT | Fish It!", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "DC_Project_FishIt"
+})
 
-MainSection:NewToggle("Auto Cast", "Otomatis melempar kail", function(state)
-    _G.AutoCast = state
-    while _G.AutoCast do
-        task.wait(1)
-        local character = game.Players.LocalPlayer.Character
-        local tool = character:FindFirstChildOfClass("Tool")
-        if tool and tool:FindFirstChild("Events") and tool.Events:FindFirstChild("Cast") then
-            tool.Events.Cast:FireServer(100)
-        end
-    end
-end)
+getgenv().AutoFish = false
+getgenv().AutoSell = false
+getgenv().AutoBuyCommon = false
+getgenv().AutoBuyRare = false
+getgenv().InstantReel = false
 
-MainSection:NewToggle("Auto Shake", "Otomatis klik UI Shake", function(state)
-    _G.AutoShake = state
-    -- Logika bypass UI Shake Fisch
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if _G.AutoShake then
-            local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-            -- Tambahkan logika spesifik UI Shake di sini jika perlu
-        end
-    end)
-end)
+-- // Tab Utama
+local MainTab = Window:MakeTab({
+	Name = "Automation",
+	Icon = "rbxassetid://4483362458",
+	PremiumOnly = false
+})
 
--- TAB BLATANT
-local Blatant = Window:NewTab("Blatant")
-local BlatantSection = Blatant:NewSection("Cheat Fitur")
+MainTab:AddToggle({
+	Name = "Auto Fish",
+	Default = false,
+	Callback = function(Value)
+		getgenv().AutoFish = Value
+		task.spawn(function()
+			while getgenv().AutoFish do
+				local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+				if tool then
+					tool:Activate()
+				end
+				task.wait(0.5)
+			end
+		end)
+	end    
+})
 
-BlatantSection:NewButton("Instant Catch", "Langsung tarik ikan", function()
-    local args = { [1] = 100, [2] = true }
-    game:GetService("ReplicatedStorage").events.reeling_event:FireServer(unpack(args))
-end)
+MainTab:AddToggle({
+	Name = "Instant Reel",
+	Default = false,
+	Callback = function(Value)
+		getgenv().InstantReel = Value
+		local reelEvent = game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Reel")
+		task.spawn(function()
+			while getgenv().InstantReel do
+				reelEvent:FireServer(100)
+				task.wait(0.1)
+			end
+		end)
+	end
+})
 
-BlatantSection:NewSlider("Walkspeed", "Atur kecepatan lari", 100, 16, function(s)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
-end)
+MainTab:AddToggle({
+	Name = "Auto Sell All",
+	Default = false,
+	Callback = function(Value)
+		getgenv().AutoSell = Value
+		task.spawn(function()
+			while getgenv().AutoSell do
+				game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Sell"):FireServer()
+				task.wait(1)
+			end
+		end)
+	end
+})
 
--- TAB TELEPORT
-local TP = Window:NewTab("Teleport")
-local TPSection = TP:NewSection("Pindah Lokasi")
+-- // Tab Blatant
+local BlatantTab = Window:MakeTab({
+	Name = "Blatant",
+	Icon = "rbxassetid://4483362458",
+	PremiumOnly = false
+})
 
-TPSection:NewButton("Moosewood (Main)", "Teleport ke pulau utama", function()
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(380, 18, 250)
-end)
+BlatantTab:AddSlider({
+	Name = "WalkSpeed",
+	Min = 16,
+	Max = 500,
+	Default = 16,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 1,
+	ValueName = "Speed",
+	Callback = function(Value)
+		game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+	end    
+})
 
-TPSection:NewButton("Roslit Bay", "Teleport ke Roslit", function()
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1500, 15, 600)
-end)
+BlatantTab:AddSlider({
+	Name = "JumpPower",
+	Min = 50,
+	Max = 500,
+	Default = 50,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 1,
+	ValueName = "Power",
+	Callback = function(Value)
+		game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+	end    
+})
 
-TPSection:NewButton("Terrapin Island", "Teleport ke Terrapin", function()
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-100, 10, -1200)
-end)
+-- // Tab Teleport
+local TPTab = Window:MakeTab({
+	Name = "Teleport",
+	Icon = "rbxassetid://4483362458",
+	PremiumOnly = false
+})
 
--- TAB INFO
-local Info = Window:NewTab("Credits")
-local InfoSection = Info:NewSection("DC PROJECT")
-InfoSection:NewLabel("Developer: DC PROJECT Team")
-InfoSection:NewLabel("Status: Updated for Delta")
+local locs = {
+	["Spawn"] = Vector3.new(0, 10, 0),
+	["Sell Station"] = Vector3.new(10, 10, 50),
+	["Ocean 1"] = Vector3.new(200, 10, 300),
+	["Ocean 2"] = Vector3.new(-500, 10, -400)
+}
+
+TPTab:AddDropdown({
+	Name = "Select Location",
+	Default = "Spawn",
+	Options = {"Spawn", "Sell Station", "Ocean 1", "Ocean 2"},
+	Callback = function(Value)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(locs[Value])
+	end
+})
+
+-- // Tab Credits
+local CreditsTab = Window:MakeTab({
+	Name = "Credits",
+	Icon = "rbxassetid://4483362458",
+	PremiumOnly = false
+})
+
+CreditsTab:AddLabel("Script: DC PROJECT")
+CreditsTab:AddLabel("Original Script: Chloe-X")
+CreditsTab:AddLabel("Converted for Delta Executor")
+
+OrionLib:Init()
+
